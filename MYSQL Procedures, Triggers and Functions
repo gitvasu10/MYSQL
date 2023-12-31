@@ -1,0 +1,164 @@
+CREATING A STORED PROCEDURE FOR PROJECTING THE student TABLE:-
+
+DELIMITER %%
+mysql> 
+mysql> CREATE PROCEDURE selectStudent()
+    -> BEGIN
+    -> SELECT * FROM student;
+    -> END %%
+
+mysql> DELIMITER ;
+ 
+mysql> CALL selectStudent();
++------+----------+-------+
+| roll | name     | marks |
++------+----------+-------+
+|    1 | Shashwat |    87 |
+|    2 | Aman     |    67 |
+|    3 | Arun     |    56 |
+|    4 | Sumit    |    88 |
+|    5 | Aditya   |    89 |
+|    6 | Anita    |    77 |
+|    7 | Sanya    |    67 |
+|    8 | Sarita   |    56 |
++------+----------+-------+
+
+SQL TRIGGERS
+
+1. BEFORE UPDATE
+
+We have an existing student table
+
+SELECT * FROM student;
++------+----------+-------+
+| roll | name     | marks |
++------+----------+-------+
+|    1 | Shashwat |    87 |
+|    2 | Aman     |    67 |
+|    3 | Arun     |    56 |
+|    4 | Sumit    |    88 |
+|    5 | Aditya   |    89 |
+|    6 | Anita    |    77 |
+|    7 | Sanya    |    67 |
+|    8 | Sarita   |    56 |
++------+----------+-------+
+
+DELIMITER %%
+
+mysql> CREATE TRIGGER beforeUpdateStudent
+    -> before update on student
+    -> for each row
+    -> begin
+    -> insert into tempStudent(roll, marks) values(old.roll, old.marks);
+    -> end %%
+
+mysql> delimiter ;
+ 
+mysql> update student set marks = marks+13 where roll = 2;
+ 
+mysql> select * from tempStudent;
++------+------+-------+
+| roll | name | marks |
++------+------+-------+
+|    2 | NULL |    67 |
++------+------+-------+
+
+SELECT * FROM student;
++------+----------+-------+
+| roll | name     | marks |
++------+----------+-------+
+|    1 | Shashwat |    87 |
+|    2 | Aman     |    80 |
+|    3 | Arun     |    56 |
+|    4 | Sumit    |    88 |
+|    5 | Aditya   |    89 |
+|    6 | Anita    |    77 |
+|    7 | Sanya    |    67 |
+|    8 | Sarita   |    56 |
++------+----------+-------+
+
+2. BEFORE DELETE
+
+DELIMITER $
+
+mysql> CREATE TRIGGER deleteStudent
+    -> BEFORE DELETE ON student
+    -> FOR EACH ROW
+    -> BEGIN
+    -> 
+    -> INSERT INTO tempStudent values (old.roll, old.name, old.marks);
+    -> 
+    -> END $
+
+mysql> DELIMITER ; 
+mysql> DELETE FROM student WHERE roll = 8;
+mysql> select * from tempStudent;
++------+--------+-------+
+| roll | name   | marks |
++------+--------+-------+
+|    2 | NULL   |    67 |
+|    8 | Sarita |    56 |
++------+--------+-------+
+
+mysql> CALL selectStudent;      //Calling the procedure
++------+----------+-------+
+| roll | name     | marks |
++------+----------+-------+
+|    1 | Shashwat |    87 |
+|    2 | Aman     |    80 |
+|    3 | Arun     |    56 |
+|    4 | Sumit    |    88 |
+|    5 | Aditya   |    89 |
+|    6 | Anita    |    77 |
+|    7 | Sanya    |    67 |
++------+----------+-------+
+
+
+3. BEFORE INSERT
+
+mysql> delimiter #
+mysql> 
+mysql> create trigger beforeInsertStudent
+    -> before insert on student
+    -> for each row
+    -> 
+    -> begin
+    -> 
+    -> if new.marks < 0 then 
+    -> signal sqlstate '45000'
+    -> set message_text = 'Marks cannot be negative!';
+    -> end if;
+    -> 
+    -> end #
+ 
+mysql> delimiter ;
+ 
+mysql> insert into student values(8, "Ravi", -12);
+ERROR 1644 (45000): Marks cannot be negative!
+
+
+CREATING A FUNCTION FOR CALCULATING THE AVERAGE OF ALL THE MARKS IN THE student TABLE:-
+
+
+DELIMITER $$
+ 
+ CREATE FUNCTION averageMarks()
+ RETURNS DECIMAL(10,2)
+ NO SQL
+ DETERMINISTIC
+ BEGIN
+
+ DECLARE totalMarks DECIMAL(20,2) DEFAULT 0;
+ DECLARE numStudents INT DEFAULT 0;
+ DECLARE avgMarks DECIMAL(10,2);
+ 
+ SELECT SUM(marks) INTO totalMarks FROM student;
+ SELECT COUNT(*) INTO numStudents FROM student;
+ 
+ SET avgMarks = IFNULL(totalMarks / numStudents, 0);
+ 
+ RETURN avgMarks;
+ 
+ END $$
+ 
+ DELIMITER ;
