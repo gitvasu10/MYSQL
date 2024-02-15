@@ -1,0 +1,9 @@
+WITH MedianValues AS (
+    SELECT *,
+           ROW_NUMBER() OVER (ORDER BY LAT_N ASC) AS A_LAT,            //for first middle value
+           ROW_NUMBER() OVER (ORDER BY LAT_N DESC) AS D_LAT            //for second middle value
+    FROM STATION
+)
+SELECT ROUND(AVG(LAT_N), 4) AS Median
+FROM MedianValues
+WHERE A_LAT = D_LAT OR A_LAT + 1 = D_LAT OR A_LAT - 1 = D_LAT;        checking for the middle values (4 = 5-1 OR 5 = 4-1)
